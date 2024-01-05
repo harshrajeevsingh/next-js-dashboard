@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { sql } from '@vercel/postgres';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 // 1. Since we're updating the data displayed in the invoices route, we want to clear 
 // this cache and trigger a new request to the server. We can do this with the 
 // revalidatePath function from Next.js: 
@@ -117,3 +119,22 @@ export async function deleteInvoice(id: string) {
 
     revalidatePath('/dashboard/invoices');
 }
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw error;
+  }
+};
